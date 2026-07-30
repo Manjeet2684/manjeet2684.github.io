@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manjeet Tiwari — Backend Engineer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12161d;
+    --surface: #1a2029;
+    --surface-2: #212836;
+    --line: #2b3341;
+    --text: #e9ecf1;
+    --muted: #8b96a8;
+    --amber: #e3a93f;
+    --blue: #6d9bf2;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(109,155,242,0.07), transparent 40%),
+      radial-gradient(circle at 85% 92%, rgba(227,169,63,0.06), transparent 40%);
+  }
+  a{color:inherit;}
+  .wrap{max-width:920px; margin:0 auto; padding:0 28px;}
+  .skip{position:absolute; left:-999px; top:0; background:var(--amber); color:#12161d; padding:10px 16px; font-family:var(--mono); z-index:100;}
+  .skip:focus{left:12px; top:12px;}
+  .rail{
+    position:fixed; top:0; bottom:0; left:calc(50% - 460px);
+    width:1px; background:linear-gradient(to bottom, transparent, var(--line) 8%, var(--line) 92%, transparent);
+    display:none;
+  }
+  @media(min-width:1040px){ .rail{display:block;} }
+  header.hero{
+    min-height:92vh;
+    display:flex; flex-direction:column; justify-content:center;
+    position:relative;
+    padding:80px 0 60px;
+  }
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--amber); display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .eyebrow .dot{width:7px; height:7px; border-radius:50%; background:var(--amber); box-shadow:0 0 0 4px rgba(227,169,63,.15);}
+  h1.name{
+    font-family:var(--mono); font-weight:700; letter-spacing:-.01em;
+    font-size:clamp(38px, 6.4vw, 64px); line-height:1.05; color:#fff;
+  }
+  .tagline{
+    margin-top:22px; max-width:640px; font-size:clamp(16px,2vw,19px); color:var(--muted); font-weight:400;
+  }
+  .tagline b{color:var(--text); font-weight:600;}
+  .hero-links{margin-top:34px; display:flex; flex-wrap:wrap; gap:12px;}
+  .btn{
+    font-family:var(--mono); font-size:13px; padding:11px 18px; border-radius:3px;
+    border:1px solid var(--line); color:var(--text); text-decoration:none;
+    display:inline-flex; align-items:center; gap:8px; transition:border-color .18s, transform .18s, background .18s;
+  }
+  .btn:hover{border-color:var(--amber); transform:translateY(-1px);}
+  .btn.primary{background:var(--amber); color:#181206; border-color:var(--amber); font-weight:600;}
+  .btn.primary:hover{background:#f0b652;}
+  .btn:focus-visible, a:focus-visible{outline:2px solid var(--blue); outline-offset:3px;}
+  .meta-row{margin-top:44px; display:flex; gap:28px; flex-wrap:wrap; font-family:var(--mono); font-size:12.5px; color:var(--muted);}
+  .meta-row span{color:var(--text);}
+  section{padding:64px 0; position:relative; border-top:1px solid var(--line);}
+  .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:34px;}
+  .sec-num{font-family:var(--mono); color:var(--amber); font-size:13px;}
+  .sec-title{font-family:var(--mono); font-size:22px; font-weight:600; color:#fff; letter-spacing:-.01em;}
+  .node{
+    position:absolute; left:-5px; top:66px; width:9px; height:9px; border-radius:50%;
+    background:var(--bg); border:2px solid var(--amber);
+  }
+  @media(min-width:1040px){
+    section{margin-left:0;}
+    .node{left:calc(-1 * (50% - 460px) - 5px + 460px * 0 - 0px);}
+  }
+  .about-text{max-width:680px; color:var(--muted); font-size:16px;}
+  .about-text p + p{margin-top:14px;}
+  .stack-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:22px 32px;}
+  .stack-group h4{
+    font-family:var(--mono); font-size:12px; text-transform:uppercase; letter-spacing:.1em;
+    color:var(--blue); margin-bottom:10px; font-weight:600;
+  }
+  .chip-row{display:flex; flex-wrap:wrap; gap:7px;}
+  .chip{
+    font-family:var(--mono); font-size:12px; padding:5px 10px; border:1px solid var(--line);
+    border-radius:3px; color:var(--text); background:var(--surface);
+  }
+  .proj{
+    background:var(--surface); border:1px solid var(--line); border-radius:6px;
+    padding:26px 26px 24px; margin-bottom:20px; position:relative; overflow:hidden;
+  }
+  .proj::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--amber);
+  }
+  .proj-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+  .proj-title{font-family:var(--mono); font-size:17px; font-weight:600; color:#fff;}
+  .proj-tag{font-family:var(--mono); font-size:11.5px; color:var(--amber); border:1px solid rgba(227,169,63,.35); padding:3px 9px; border-radius:20px; white-space:nowrap;}
+  .proj-stack{font-family:var(--mono); font-size:12px; color:var(--blue); margin-top:6px;}
+  .proj ul{margin-top:14px; padding-left:0; list-style:none;}
+  .proj li{position:relative; padding-left:20px; color:var(--muted); font-size:14.5px; margin-top:8px;}
+  .proj li::before{content:"→"; position:absolute; left:0; color:var(--amber); font-family:var(--mono);}
+  .tl-item{padding-left:26px; position:relative; margin-bottom:30px;}
+  .tl-item:last-child{margin-bottom:0;}
+  .tl-item::before{content:""; position:absolute; left:0; top:5px; width:8px; height:8px; border-radius:50%; background:var(--blue);}
+  .tl-item::after{content:""; position:absolute; left:3.5px; top:15px; bottom:-30px; width:1px; background:var(--line);}
+  .tl-item:last-child::after{display:none;}
+  .tl-top{display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; align-items:baseline;}
+  .tl-role{font-weight:600; color:#fff; font-size:15.5px;}
+  .tl-date{font-family:var(--mono); font-size:12px; color:var(--amber);}
+  .tl-sub{font-family:var(--mono); font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .tl-item ul{margin-top:10px; padding-left:0; list-style:none;}
+  .tl-item li{position:relative; padding-left:18px; color:var(--muted); font-size:14.5px; margin-top:6px;}
+  .tl-item li::before{content:"·"; position:absolute; left:2px; color:var(--blue); font-weight:700;}
+  .cert-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px;}
+  .cert{
+    font-size:14px; color:var(--muted); padding:14px 16px; background:var(--surface);
+    border:1px solid var(--line); border-radius:5px; border-left:3px solid var(--blue);
+  }
+  .cert b{color:var(--text); font-weight:600; display:block; margin-bottom:2px; font-size:14.5px;}
+  .edu-card{background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:22px 26px;}
+  .edu-top{display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+  .edu-name{font-weight:600; color:#fff; font-size:16px;}
+  .edu-date{font-family:var(--mono); font-size:12px; color:var(--amber);}
+  .edu-sub{color:var(--muted); font-size:14.5px; margin-top:6px;}
+  .edu-rows{margin-top:14px; padding-top:14px; border-top:1px solid var(--line); font-size:13.5px; color:var(--muted); display:flex; gap:28px; flex-wrap:wrap; font-family:var(--mono);}
+  .edu-rows span{color:var(--text);}
+  footer{padding:60px 0 50px; text-align:center;}
+  footer .sig{font-family:var(--mono); font-size:12px; color:var(--muted); letter-spacing:.05em;}
+  footer .contact-line{margin-top:14px; font-family:var(--mono); font-size:14px; color:var(--text);}
+  footer .contact-line a{color:var(--blue); text-decoration:none;}
+  footer .contact-line a:hover{text-decoration:underline;}
+  ::selection{background:var(--amber); color:#181206;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{transition:none !important;}
+  }
+  .reveal{opacity:0; transform:translateY(14px); transition:opacity .5s ease, transform .5s ease;}
+  .reveal.in{opacity:1; transform:none;}
+</style>
+</head>
+<body>
+<a href="#main" class="skip">Skip to content</a>
+<div class="rail" aria-hidden="true"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot"></span>Available for backend engineering roles</div>
+    <h1 class="name">Manjeet&nbsp;Tiwari</h1>
+    <p class="tagline">Backend engineer building <b>resilient, secure, distributed systems</b> — from offline-first payment meshes to role-based access control for REST APIs. Final-year CS student, GGSIPU, New Delhi.</p>
+    <div class="hero-links">
+      <a class="btn primary" href="mailto:manjeettiwari2684@gmail.com">Email me</a>
+      <a class="btn" href="https://linkedin.com/in/manjeet-tiwari-324960360" target="_blank" rel="noopener">LinkedIn</a>
+      <a class="btn" href="tel:+919430681239">+91&nbsp;94306&nbsp;81239</a>
+    </div>
+    <div class="meta-row">
+      <div>Location — <span>New Delhi, India</span></div>
+      <div>Graduating — <span>June 2027</span></div>
+      <div>Focus — <span>Java · Spring Boot · Distributed Systems</span></div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <section id="about" class="reveal">
+    <div class="wrap">
+      <div class="node"></div>
+      <div class="sec-head"><span class="sec-num">01</span><span class="sec-title">About</span></div>
+      <div class="about-text">
+        <p>I'm a final-year Computer Science student at Guru Gobind Singh Indraprastha University, holding an 8.9 overall GPA (9.23 in my most recent semester), with a core focus on backend engineering — Java and Spring Boot, secured APIs, and systems that keep working when the network doesn't.</p>
+        <p>My strongest project work sits at the intersection of cryptography and distributed systems: an offline-first mesh payment network and a stateless, role-based access control system. I like problems where correctness, security, and resilience all have to hold at once.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="stack" class="reveal">
+    <div class="wrap">
+      <div class="node"></div>
+      <div class="sec-head"><span class="sec-num">02</span><span class="sec-title">Stack</span></div>
+      <div class="stack-grid">
+        <div class="stack-group">
+          <h4>Languages</h4>
+          <div class="chip-row">
+            <span class="chip">Java</span><span class="chip">Python</span><span class="chip">SQL</span>
+          </div>
+        </div>
+        <div class="stack-group">
+          <h4>Frameworks &amp; Tools</h4>
+          <div class="chip-row">
+            <span class="chip">Spring Boot</span><span class="chip">Spring Security</span><span class="chip">FastAPI</span>
+            <span class="chip">Kafka</span><span class="chip">OAuth2</span><span class="chip">JWT</span>
+            <span class="chip">REST APIs</span><span class="chip">JPA/Hibernate</span><span class="chip">Redis</span>
+            <span class="chip">Docker</span><span class="chip">Kubernetes</span><span class="chip">GitHub</span>
+            <span class="chip">JUnit</span><span class="chip">SonarQube</span>
+          </div>
+        </div>
+        <div class="stack-group">
+          <h4>Databases</h4>
+          <div class="chip-row">
+            <span class="chip">MySQL</span><span class="chip">PostgreSQL</span><span class="chip">MongoDB</span>
+          </div>
+        </div>
+        <div class="stack-group">
+          <h4>Cloud</h4>
+          <div class="chip-row">
+            <span class="chip">AWS EC2</span><span class="chip">AWS S3</span><span class="chip">AWS IAM</span>
+          </div>
+        </div>
+        <div class="stack-group" style="grid-column:1/-1">
+          <h4>Core Competencies</h4>
+          <div class="chip-row">
+            <span class="chip">Data Structures & Algorithms</span><span class="chip">System Design</span>
+            <span class="chip">Distributed Systems</span><span class="chip">Microservices</span>
+            <span class="chip">Process Automation</span><span class="chip">Generative AI & LLM Concepts</span>
+            <span class="chip">Problem Solving</span><span class="chip">Team Collaboration</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="projects" class="reveal">
+    <div class="wrap">
+      <div class="node"></div>
+      <div class="sec-head"><span class="sec-num">03</span><span class="sec-title">Systems I've built</span></div>
+
+      <div class="proj">
+        <div class="proj-top">
+          <div class="proj-title">UPI Offline Mesh Payment System</div>
+          <div class="proj-tag">Personal Project</div>
+        </div>
+        <div class="proj-stack">Java · Spring Boot · Cryptography · Distributed Systems</div>
+        <ul>
+          <li>Architected a Spring Boot backend simulating offline UPI payments over a Bluetooth-style mesh network, enabling automated transaction processing with zero internet connectivity.</li>
+          <li>Implemented hybrid RSA + AES-GCM encryption to secure payment packets end-to-end across untrusted intermediary devices in the mesh.</li>
+          <li>Automated idempotent settlement logic using ciphertext hash-based deduplication, guaranteeing exactly-once processing and eliminating duplicate transactions.</li>
+        </ul>
+      </div>
+
+      <div class="proj">
+        <div class="proj-top">
+          <div class="proj-title">Role-Based Access Control (RBAC) System</div>
+          <div class="proj-tag">Security Project</div>
+        </div>
+        <div class="proj-stack">Java · Spring Boot · Spring Security · JWT · OAuth2 · JPA</div>
+        <ul>
+          <li>Designed and implemented a role-based access control system to secure backend services and REST APIs across multiple user roles.</li>
+          <li>Built stateless authentication using Spring Security, JWT, and OAuth2 for distributed services.</li>
+          <li>Modeled users, roles, and permissions using JPA (Hibernate) against a relational schema for secure auth flows.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="experience" class="reveal">
+    <div class="wrap">
+      <div class="node"></div>
+      <div class="sec-head"><span class="sec-num">04</span><span class="sec-title">Experience</span></div>
+
+      <div class="tl-item">
+        <div class="tl-top">
+          <span class="tl-role">Java Development Intern — CodSoft (Remote)</span>
+          <span class="tl-date">Jul 2025 – Aug 2025</span>
+        </div>
+        <div class="tl-sub">Batch: July B39 · Java, OOP, Data Structures, File Handling</div>
+        <ul>
+          <li>Built a Student Management System in Java to add, remove, search, and display student records.</li>
+          <li>Implemented a console interface with input validation for required and correctly formatted fields.</li>
+          <li>Implemented file-based read/write operations to persist student records across sessions.</li>
+        </ul>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-top">
+          <span class="tl-role">Web Development Volunteer — Coding Rangers, College Coding Club</span>
+          <span class="tl-date">May 2025</span>
+        </div>
+        <div class="tl-sub">TIIPS, Greater Noida</div>
+        <ul>
+          <li>Built and maintained the club's event registration page using HTML, CSS, and JavaScript.</li>
+          <li>Converted designer mock-ups into responsive, functional web pages.</li>
+          <li>Mentored junior students in front-end debugging during weekly peer-coding sessions.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="education" class="reveal">
+    <div class="wrap">
+      <div class="node"></div>
+      <div class="sec-head"><span class="sec-num">05</span><span class="sec-title">Education</span></div>
+      <div class="edu-card">
+        <div class="edu-top">
+          <span class="edu-name">Guru Gobind Singh Indraprastha University</span>
+          <span class="edu-date">Expected June 2027</span>
+        </div>
+        <div class="edu-sub">B.Tech, Computer Science &amp; Technology — 8.9 GPA overall (9.23 GPA, 6th semester)</div>
+        <div class="edu-rows">
+          <div>Class 12th (CBSE) — <span>82.8%</span>, March 2023</div>
+          <div>Class 10th (CBSE) — <span>93.16%</span>, March 2021</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="certifications" class="reveal">
+    <div class="wrap">
+      <div class="node"></div>
+      <div class="sec-head"><span class="sec-num">06</span><span class="sec-title">Certifications &amp; Achievements</span></div>
+      <div class="cert-grid">
+        <div class="cert"><b>Generative AI Foundational Certificate</b>School of AI — Nov 2025</div>
+        <div class="cert"><b>Python Using AI Workshop</b>AI For Techies — May 2026</div>
+        <div class="cert"><b>Spring Microservices Certificate</b>Infosys Springboard — Apr 2026</div>
+        <div class="cert"><b>Spring 5 Basics with Spring Boot</b>Infosys Springboard — Apr 2026</div>
+        <div class="cert"><b>Web Development Professional Certification</b>MTF Institute — Jun 2026</div>
+        <div class="cert"><b>Microsoft TechJam 2.0 — Round 3</b>Team S-Squad, Microsoft Sovereign Office, Noida — Nov 2025</div>
+        <div class="cert"><b>Smart India Hackathon 2025</b>Team quantum_Coders, TIIPS Greater Noida — Sept 2025</div>
+        <div class="cert"><b>Syncathon '25</b>Organized by Logic Sync, TIIPS Greater Noida — 2025</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="sig">// end of transmission — thanks for reading</div>
+    <div class="contact-line">
+      <a href="mailto:manjeettiwari2684@gmail.com">manjeettiwari2684@gmail.com</a> ·
+      <a href="tel:+919430681239">+91&nbsp;94306&nbsp;81239</a> ·
+      <a href="https://linkedin.com/in/manjeet-tiwari-324960360" target="_blank" rel="noopener">linkedin.com/in/manjeet-tiwari-324960360</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const items = document.querySelectorAll('.reveal');
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, {threshold:0.12});
+    items.forEach(i=>io.observe(i));
+  } else {
+    items.forEach(i=>i.classList.add('in'));
+  }
+</script>
+</body>
+</html>
