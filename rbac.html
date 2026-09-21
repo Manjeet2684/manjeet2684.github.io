@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Common Login Module (RBAC) · Manjeet Tiwari</title>
+  <meta name="description" content="Spring Boot JWT authentication module with JwtAuthenticationFilter, CustomUserDetailsService, BCrypt, and USER/MODERATOR/ADMIN method security.">
+  <link rel="canonical" href="https://manjeet2684.github.io/rbac.html">
+  <meta name="theme-color" content="#0d1117">
+  <meta property="og:title" content="Common Login Module (RBAC)">
+  <meta property="og:description" content="JWT authentication separated from role-based authorization in Spring Security.">
+  <meta property="og:url" content="https://manjeet2684.github.io/rbac.html">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='16' font-weight='700' fill='%23e5a93f' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <nav class="site-nav" aria-label="Primary">
+    <div class="inner">
+      <a class="brand" href="index.html">manjeet tiwari</a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="saakh.html">SAAKH</a>
+        <a href="upi-mesh.html">UPI Mesh</a>
+        <a href="rbac.html" aria-current="page">RBAC</a>
+        <a class="nav-cta" href="./resume/Manjeet_Tiwari_Resume.pdf" data-resume-href>Résumé</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main" class="wrap">
+    <header class="page-hero">
+      <p class="crumb"><a href="index.html">Home</a> / RBAC</p>
+      <h1 class="name page-title">Common Login Module (RBAC)</h1>
+      <p class="role-line">JWT authentication and role-based authorization</p>
+      <p class="tagline">A reusable login boundary for Spring Boot APIs: the filter chain decides who you are, method security decides what you may call.</p>
+      <dl class="glance">
+        <div><dt>Stack</dt><dd>Java · Spring Boot · Spring Security · JJWT</dd></div>
+        <div><dt>Roles</dt><dd>USER · MODERATOR · ADMIN</dd></div>
+        <div><dt>Storage</dt><dd>JPA/Hibernate · H2 · BCrypt hashes</dd></div>
+        <div><dt>Source</dt><dd>Inspected locally from <code>common_login.module</code></dd></div>
+      </dl>
+    </header>
+
+    <div class="article-grid">
+      <aside class="toc" id="toc"></aside>
+      <!-- Headings are numbered by CSS. Do not type numbers into the <h2>. -->
+      <div class="article-body">
+        <h2>Problem</h2>
+        <p>APIs need a login boundary that is reusable: register and login issue a token; subsequent requests carry that token; some routes are public, some need any authenticated user, some need ADMIN or MODERATOR.</p>
+
+        <h2>Authentication vs authorization</h2>
+        <p>Authentication answers “who is this?” (username/password → JWT). Authorization answers “may this principal hit this method?” (<code>@PreAuthorize</code> on roles). Mixing those in one controller check is how APIs leak; this module keeps them in the filter chain and method security.</p>
+
+        <h2>JWT flow</h2>
+        <pre class="flow" aria-label="JWT request flow">POST /api/auth/register | /api/auth/login   (permitAll)
+        → BCrypt verify/hash, AuthenticationManager
+        → JwtService.generateToken(User)
+        → AuthResponse { token, expiry, user, roles }
+
+GET /api/...  Authorization: Bearer &lt;jwt&gt;
+        → JwtAuthenticationFilter
+        → load UserDetails, validate token
+        → SecurityContextHolder
+        → @PreAuthorize on controller methods</pre>
+
+        <h2>JwtAuthenticationFilter</h2>
+        <p><code>OncePerRequestFilter</code>. If there is no <code>Authorization: Bearer</code> header, the chain continues (public routes still work). Otherwise the filter extracts the username, loads <code>UserDetails</code>, checks token validity, and sets a <code>UsernamePasswordAuthenticationToken</code> into the security context. On parse/validation failure it clears the context and continues, so protected routes fail closed as unauthenticated rather than throwing from the filter.</p>
+
+        <h2>CustomUserDetailsService</h2>
+        <p>Implements Spring <code>UserDetailsService</code> and loads the JPA <code>User</code> by username. The <code>User</code> entity itself implements <code>UserDetails</code>.</p>
+
+        <h2>BCrypt</h2>
+        <p><code>PasswordEncoder</code> bean is <code>BCryptPasswordEncoder</code>. Registration stores the encoded password; login goes through <code>DaoAuthenticationProvider</code>.</p>
+
+        <h2>SecurityContextHolder</h2>
+        <p>Request-level authentication is stored in the context after a valid JWT. Controllers can take <code>@AuthenticationPrincipal User</code> (see <code>/api/auth/me</code>).</p>
+
+        <h2>User → Role model</h2>
+        <p>Verified in source: <code>User</code> has an <code>@ElementCollection</code> of enum <code>Role { USER, MODERATOR, ADMIN }</code> stored in <code>user_roles</code>. Authorities are <code>ROLE_</code> plus the enum name. There is <strong>no separate Permission entity</strong> and no many-to-many User–Role–Permission table in this codebase. Method security uses roles, not a permission catalog.</p>
+
+        <h2>OAuth2</h2>
+        <p>Not present in the inspected <code>pom.xml</code> or security config. This module is JWT resource-server style (JJWT), not an OAuth2 authorization-server or client flow. It is not an implemented dependency in this project.</p>
+
+        <h2>Request lifecycle</h2>
+        <ul>
+          <li>Stateless sessions (<code>SessionCreationPolicy.STATELESS</code>).</li>
+          <li>CSRF disabled for the API; CORS defaults enabled.</li>
+          <li>Public: <code>/api/auth/register</code>, <code>/api/auth/login</code>, H2 console, <code>/actuator/health</code>.</li>
+          <li>Everything else authenticated. Filter sits before <code>UsernamePasswordAuthenticationFilter</code>.</li>
+        </ul>
+
+        <h2>Exception handling</h2>
+        <p><code>GlobalExceptionHandler</code> (<code>@RestControllerAdvice</code>) maps validation errors to 400, bad credentials to 401, access denied to 403, missing resources to 404, and a generic 500 that does not leak internals. Filter-chain 401/403 also write JSON <code>ApiError</code> bodies.</p>
+
+        <h2>Database model</h2>
+        <p>H2 runtime. <code>users</code> table with unique username and email. <code>user_roles</code> collection table. Demo data via <code>DataInitializer</code>. Not PostgreSQL in this module.</p>
+
+        <h2>Method security examples</h2>
+        <ul>
+          <li><code>GET /api/users</code> — <code>hasRole('ADMIN')</code></li>
+          <li><code>GET /api/users/{id}</code> — admin or self (<code>#id == principal.id</code>)</li>
+          <li><code>GET /api/admin/dashboard</code> — ADMIN</li>
+          <li><code>GET /api/moderator/reports</code> — MODERATOR or ADMIN</li>
+        </ul>
+
+        <h2>Security considerations</h2>
+        <ul>
+          <li>Passwords never stored in plaintext.</li>
+          <li>JWT secret via <code>JwtProperties</code> (must not ship a production secret in source).</li>
+          <li>H2 console is permitted in this demo — disable that outside local use.</li>
+        </ul>
+
+        <h2>Repository</h2>
+        <p>A public source-code link is not included yet. This page describes the local Common Login Module source. A repository URL will be added here when that code is published as-is.</p>
+
+        <nav class="page-nav" aria-label="More case studies">
+          <a class="btn" href="upi-mesh.html">← UPI Mesh</a>
+          <a class="btn" href="index.html">Home</a>
+        </nav>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <p class="sig" id="js-footer-sig">Manjeet Tiwari — Backend Engineer · Java / Spring Boot</p>
+      <p class="contact-line">
+        <a href="mailto:manjeettiwari2684@gmail.com" data-email-href><span id="js-footer-email">manjeettiwari2684@gmail.com</span></a>
+        <a href="https://www.linkedin.com/in/manjeet-tiwari-324960360" data-linkedin-href>LinkedIn</a>
+        <a href="https://github.com/Manjeet2684" data-github-href>GitHub</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/site-data.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

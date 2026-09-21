@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://manjeet2684.github.io/

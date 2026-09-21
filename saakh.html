@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAAKH — Financial transfer backend · Manjeet Tiwari</title>
+  <meta name="description" content="SAAKH is a Spring Boot monolith for financial transfers: PostgreSQL is the source of truth; Kafka is used only after commit via a transactional outbox.">
+  <link rel="canonical" href="https://manjeet2684.github.io/saakh.html">
+  <meta name="theme-color" content="#0d1117">
+  <meta property="og:title" content="SAAKH — Financial transfer backend">
+  <meta property="og:description" content="Correctness-focused transfer and reconciliation backend. Not a bank. Not microservices. Not exactly-once Kafka.">
+  <meta property="og:url" content="https://manjeet2684.github.io/saakh.html">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='16' font-weight='700' fill='%23e5a93f' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <nav class="site-nav" aria-label="Primary">
+    <div class="inner">
+      <a class="brand" href="index.html">manjeet tiwari</a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="saakh.html" aria-current="page">SAAKH</a>
+        <a href="upi-mesh.html">UPI Mesh</a>
+        <a href="rbac.html">RBAC</a>
+        <a class="nav-cta" href="./resume/Manjeet_Tiwari_Resume.pdf" data-resume-href>Résumé</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main" class="wrap">
+    <header class="page-hero">
+      <p class="crumb"><a href="index.html">Home</a> / SAAKH</p>
+      <h1 class="name page-title">SAAKH</h1>
+      <p class="role-line">Financial transfer and reconciliation backend</p>
+      <p class="tagline">A Spring Boot monolith where PostgreSQL is the source of truth and Kafka is used only after commit, through a transactional outbox.</p>
+      <dl class="glance">
+        <div><dt>Stack</dt><dd>Java 21 · Spring Boot 3.5 · PostgreSQL · Kafka</dd></div>
+        <div><dt>Shape</dt><dd>Single deployable monolith, producer-only Kafka</dd></div>
+        <div><dt>Tests</dt><dd>47 automated · Testcontainers · GitHub Actions</dd></div>
+        <div><dt>Source</dt><dd><a href="https://github.com/Manjeet2684/SAAKH">GitHub repository</a></dd></div>
+      </dl>
+      <div class="hero-links">
+        <a class="btn primary" href="https://github.com/Manjeet2684/SAAKH">GitHub repository</a>
+        <a class="btn" href="./resume/Manjeet_Tiwari_Resume.pdf" data-resume-href>Résumé</a>
+      </div>
+    </header>
+
+    <div class="article-grid">
+      <aside class="toc" id="toc"></aside>
+      <!-- Headings are numbered by CSS. Do not type numbers into the <h2>. -->
+      <div class="article-body">
+        <h2>What problem this solves</h2>
+        <p>Posting APIs fail in ordinary ways: client retries, duplicate requests, concurrent debits, and a second write to a message broker. SAAKH is built so those cases stay visible and testable instead of becoming silent double-moves or missing events.</p>
+
+        <h2>Why transfer correctness matters</h2>
+        <p>Money movement is not “eventually consistent enough.” A crash halfway through a debit/credit pair, or a retry that posts twice, is a ledger bug. SAAKH keeps the books in PostgreSQL and treats Kafka as an after-commit notification path, not a second ledger.</p>
+
+        <h2>Architecture overview</h2>
+        <pre class="flow" aria-label="SAAKH architecture">Client --HTTP--&gt; Spring Boot monolith
+                     |
+                     |  TX A: posting (PostgreSQL only)
+                     v
+              PostgreSQL (source of truth)
+                     |
+                     |  after commit
+                     v
+              TX B: outbox publisher --at-least-once--&gt; Kafka topic saakh.transfers</pre>
+        <p>There is no Kafka consumer in this project and no notification writer. Kafka is producer-only.</p>
+
+        <h2>Money-movement transaction (TX A)</h2>
+        <p>One PostgreSQL transaction posts the transfer. Inside that transaction:</p>
+        <ul>
+          <li>Lock both accounts (see concurrency).</li>
+          <li>Validate, debit source, credit destination.</li>
+          <li>Write the transfer record.</li>
+          <li>Write immutable double-entry ledger lines (DEBIT and CREDIT).</li>
+          <li>Insert an unpublished outbox row (event ID assigned here).</li>
+          <li>Insert the idempotency record.</li>
+          <li>Commit. HTTP 201.</li>
+        </ul>
+        <p>Kafka is not called in TX A.</p>
+
+        <h2>Concurrency control</h2>
+        <p>Account rows are locked with ordered <code>SELECT … FOR UPDATE</code> (lock by account id order) so concurrent A→B and B→A cannot deadlock, and cached balances cannot be lost under overlapping transfers.</p>
+
+        <h2>Idempotency</h2>
+        <p>Clients send an <code>Idempotency-Key</code>. The request body is fingerprinted with SHA-256. Same key + same body replays the original transfer (HTTP 201, money does not move twice). Same key + different body returns HTTP 409. Missing key returns 400.</p>
+
+        <h2>Transactional outbox</h2>
+        <p>The unpublished outbox row is committed with the money. After that commit, a separate publisher (TX B) selects unpublished rows with <code>FOR UPDATE SKIP LOCKED</code>, produces to Kafka, and sets <code>published_at</code> only after acknowledgement. Publish failure leaves <code>published_at</code> null so a later batch can retry.</p>
+
+        <h2>Kafka / at-least-once semantics</h2>
+        <p>Delivery to Kafka is <strong>at-least-once</strong>, not exactly-once. Events have stable event IDs assigned at insert. <code>transferId</code> is the partition key. If Kafka acks and the process crashes before <code>published_at</code> commits, the same <code>eventId</code> may be published again. There is no consumer-side deduplication and no XA.</p>
+
+        <h2>Reconciliation</h2>
+        <p>Detect-only. Settlement ingest is fingerprint-protected. Reconciliation classifies MATCHED / MISSING_EXTERNAL / MISSING_INTERNAL / amount or currency mismatch / duplicate external. It never moves money and never rewrites ledger, transfer, or outbox rows.</p>
+
+        <h2>Testing</h2>
+        <p>47 automated tests, including Testcontainers-backed API tests (PostgreSQL, and Kafka for outbox publisher tests). GitHub Actions runs the suite and builds a local image. It does not deploy.</p>
+
+        <h2>Operational considerations</h2>
+        <ul>
+          <li>Request IDs on <code>X-Request-ID</code>, copied into MDC logs. Invalid IDs are replaced; the request is not rejected.</li>
+          <li>Micrometer in-process; Actuator exposure is health only. Readiness is process + PostgreSQL. Kafka is not in the readiness group.</li>
+          <li>Docker Compose for PostgreSQL and Kafka. Two API-key audiences (client vs internal); SHA-256 compared with <code>MessageDigest.isEqual</code>.</li>
+        </ul>
+
+        <h2>What this project does not claim</h2>
+        <div class="note">
+          <strong>Not claimed:</strong> production banking platform, UPI switch, Razorpay clone, microservices, exactly-once Kafka, invented TPS/latency/volume, live production traffic, automatic ledger repair, PSP integration.
+        </div>
+
+        <h2>Technology stack</h2>
+        <div class="table-wrap">
+          <table class="plain">
+            <thead><tr><th>Piece</th><th>In this repository</th></tr></thead>
+            <tbody>
+              <tr><td>Language</td><td>Java 21</td></tr>
+              <tr><td>Application</td><td>Spring Boot 3.5.x monolith</td></tr>
+              <tr><td>Persistence</td><td>PostgreSQL, Flyway, JPA/Hibernate</td></tr>
+              <tr><td>Messaging</td><td>Kafka producer, topic <code>saakh.transfers</code>, at-least-once</td></tr>
+              <tr><td>Build / CI</td><td>Maven Wrapper, GitHub Actions</td></tr>
+              <tr><td>Tests</td><td>JUnit, MockMvc, Testcontainers (47 tests)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Repository</h2>
+        <p>Everything described on this page comes from the <a href="https://github.com/Manjeet2684/SAAKH">GitHub repository</a> and its README.</p>
+
+        <nav class="page-nav" aria-label="More case studies">
+          <a class="btn" href="index.html">← Home</a>
+          <a class="btn" href="upi-mesh.html">UPI Mesh →</a>
+        </nav>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <p class="sig" id="js-footer-sig">Manjeet Tiwari — Backend Engineer · Java / Spring Boot</p>
+      <p class="contact-line">
+        <a href="mailto:manjeettiwari2684@gmail.com" data-email-href><span id="js-footer-email">manjeettiwari2684@gmail.com</span></a>
+        <a href="https://www.linkedin.com/in/manjeet-tiwari-324960360" data-linkedin-href>LinkedIn</a>
+        <a href="https://github.com/Manjeet2684" data-github-href>GitHub</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/site-data.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

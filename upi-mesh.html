@@ -1,0 +1,135 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UPI Offline Mesh Payment System — simulation · Manjeet Tiwari</title>
+  <meta name="description" content="Spring Boot simulation of mesh-routed deferred settlement using RSA-OAEP, AES-256-GCM, freshness checks, and SHA-256 ciphertext hashing. Not NPCI/UPI infrastructure.">
+  <link rel="canonical" href="https://manjeet2684.github.io/upi-mesh.html">
+  <meta name="theme-color" content="#0d1117">
+  <meta property="og:title" content="UPI Offline Mesh Payment System (simulation)">
+  <meta property="og:description" content="Encrypted packets hop a software mesh until a bridge uploads them for settlement. Teaching demo, not real UPI.">
+  <meta property="og:url" content="https://manjeet2684.github.io/upi-mesh.html">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d1117'/%3E%3Ctext x='16' y='22' font-family='monospace' font-size='16' font-weight='700' fill='%23e5a93f' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <nav class="site-nav" aria-label="Primary">
+    <div class="inner">
+      <a class="brand" href="index.html">manjeet tiwari</a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="saakh.html">SAAKH</a>
+        <a href="upi-mesh.html" aria-current="page">UPI Mesh</a>
+        <a href="rbac.html">RBAC</a>
+        <a class="nav-cta" href="./resume/Manjeet_Tiwari_Resume.pdf" data-resume-href>Résumé</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main" class="wrap">
+    <header class="page-hero">
+      <p class="crumb"><a href="index.html">Home</a> / UPI Mesh</p>
+      <h1 class="name page-title">UPI Offline Mesh Payment System</h1>
+      <p class="role-line">Mesh-routed deferred settlement — simulation</p>
+      <p class="tagline">A Spring Boot backend plus a software mesh. Encrypted packets hop untrusted devices until a bridge uploads them. This is not NPCI, not a UPI switch, and not a live payment network.</p>
+      <dl class="glance">
+        <div><dt>Stack</dt><dd>Java · Spring Boot · JPA · H2</dd></div>
+        <div><dt>Cryptography</dt><dd>RSA-OAEP + AES-256-GCM · SHA-256</dd></div>
+        <div><dt>Idempotency</dt><dd>Atomic hash claim + unique packet-hash</dd></div>
+        <div><dt>Source</dt><dd><a href="https://github.com/Manjeet2684/UPI-OFFLINE-MESH-PAYMENT-SYSTEM-">GitHub repository</a></dd></div>
+      </dl>
+      <div class="hero-links">
+        <a class="btn primary" href="https://github.com/Manjeet2684/UPI-OFFLINE-MESH-PAYMENT-SYSTEM-">GitHub repository</a>
+        <a class="btn" href="./resume/Manjeet_Tiwari_Resume.pdf" data-resume-href>Résumé</a>
+      </div>
+    </header>
+
+    <div class="article-grid">
+      <aside class="toc" id="toc"></aside>
+      <!-- Headings are numbered by CSS. Do not type numbers into the <h2>. -->
+      <div class="article-body">
+        <div class="note"><strong>Label:</strong> simulation / teaching demo. H2 in-memory database. Idempotency cache is a JVM <code>ConcurrentHashMap</code> (Redis SETNX analogue), with a unique packet-hash constraint as a second line of defense.</div>
+
+        <h2>Real-world motivation</h2>
+        <p>There are places with no useful uplink: basement, metro, festival crowd. The interesting question is whether a payment instruction can travel through nearby phones and still settle once when some device finally reaches the internet.</p>
+
+        <h2>Offline payment problem</h2>
+        <p>The receiver cannot verify funds offline. A packet in transit is an IOU until the backend settles. The README is explicit: this is deferred settlement, not “real-time offline UPI.”</p>
+
+        <h2>Mesh simulation</h2>
+        <p>Virtual devices gossip packets with a TTL. A designated bridge with <code>hasInternet=true</code> POSTs ciphertext to <code>/api/bridge/ingest</code>. There is no real Bluetooth stack in this project.</p>
+        <pre class="flow" aria-label="Mesh simulation flow">Sender phone (offline)
+  encrypt PaymentInstruction → MeshPacket
+        |
+        v  gossip hops (simulated BLE)
+  stranger devices  →  bridge walks “outside”
+        |
+        v  HTTPS POST /api/bridge/ingest
+  hash → claim → decrypt → freshness → settle</pre>
+
+        <h2>Threat model</h2>
+        <ul>
+          <li>Untrusted hops must not read amount or parties.</li>
+          <li>Bit-flips in ciphertext must not settle.</li>
+          <li>Several bridges uploading the same packet must not debit twice.</li>
+          <li>An old captured ciphertext must not replay after the freshness window.</li>
+        </ul>
+
+        <h2>Encryption: RSA-OAEP + AES-256-GCM</h2>
+        <p>Hybrid cryptography: a fresh AES-256 key encrypts the JSON with AES-256-GCM (confidentiality + GCM tag for tamper detection). That AES key is wrapped with RSA-OAEP using the server’s public key. Intermediaries see opaque ciphertext. Tampering fails GCM verification before settlement.</p>
+
+        <h2>Freshness / replay protection</h2>
+        <p>The encrypted payload includes <code>signedAt</code> (rejected if older than the configured window, 24 hours in the demo) and a nonce. Changing those fields without the key breaks the GCM tag. A replay of the same ciphertext is byte-identical, so the hash claim catches it.</p>
+
+        <h2>SHA-256 hashing</h2>
+        <p>The server hashes the ciphertext first, before RSA. Dedupe key is the ciphertext hash, not a rewritable packet id and not the cleartext (which would require decrypting first).</p>
+
+        <h2>Duplicate delivery handling</h2>
+        <p><code>IdempotencyService.claim(hash)</code> uses atomic <code>putIfAbsent</code>. One concurrent claimer proceeds to decrypt and settle; others are dropped as duplicates. A unique index on <code>transactions.packet_hash</code> backs this if the cache layer is wrong. This is single-process atomic claim, not distributed exactly-once processing. Do not read it as Kafka exactly-once or as a production multi-node guarantee.</p>
+
+        <h2>Settlement simulation</h2>
+        <p><code>@Transactional</code> debit + credit + ledger insert. Accounts use <code>@Version</code> optimistic locking as defense in depth. Ledger is H2, seeded in memory.</p>
+
+        <h2>Limitations</h2>
+        <ul>
+          <li>No proof of funds offline; double-spend across two basements is inherent to the concept.</li>
+          <li>RSA keypair is regenerated on startup — not an HSM.</li>
+          <li>No auth on the bridge ingest endpoint in the demo.</li>
+          <li>Bluetooth in real life is much harder than the simulator.</li>
+        </ul>
+
+        <h2>Technology stack</h2>
+        <p>Java 17+, Spring Boot, JPA, H2, hybrid RSA-OAEP + AES-256-GCM, SHA-256, in-memory idempotency cache, concurrency test for three simultaneous bridge ingestions.</p>
+
+        <h2>Source</h2>
+        <p>Everything described on this page comes from the <a href="https://github.com/Manjeet2684/UPI-OFFLINE-MESH-PAYMENT-SYSTEM-">GitHub repository</a> and its README.</p>
+
+        <nav class="page-nav" aria-label="More case studies">
+          <a class="btn" href="saakh.html">← SAAKH</a>
+          <a class="btn" href="rbac.html">RBAC →</a>
+        </nav>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap">
+      <p class="sig" id="js-footer-sig">Manjeet Tiwari — Backend Engineer · Java / Spring Boot</p>
+      <p class="contact-line">
+        <a href="mailto:manjeettiwari2684@gmail.com" data-email-href><span id="js-footer-email">manjeettiwari2684@gmail.com</span></a>
+        <a href="https://www.linkedin.com/in/manjeet-tiwari-324960360" data-linkedin-href>LinkedIn</a>
+        <a href="https://github.com/Manjeet2684" data-github-href>GitHub</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="js/site-data.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
