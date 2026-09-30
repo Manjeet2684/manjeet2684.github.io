@@ -171,7 +171,7 @@ window.SITE = {
     school: "Guru Gobind Singh Indraprastha University",
     dates: "2023 – Expected June 2027",
     detail: "B.Tech, Computer Science & Technology — GPA 8.9/10 overall (9.23/10, 6th semester)",
-    secondary: "Class XII (CBSE) 82.8%, Mar 2023 · Class X (CBSE) 93.16%, Mar 2021",
+    secondary: "Class XII 82.8%, Mar 2023 · Class X 93.16%, Mar 2021",
   },
 
   achievements: [
