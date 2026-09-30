@@ -33,7 +33,7 @@ window.SITE = {
     linkedin: "https://www.linkedin.com/in/manjeet-tiwari-324960360",
     email: "mailto:manjeettiwari2684@gmail.com",
     phone: "tel:+919430681239",
-    resume: "./resume/Manjeet_Tiwari_Resume.pdf",
+    resume: "./resume/Manjeet_Tiwari_Java_Backend_Developer.pdf",
     portfolio: "https://manjeet2684.github.io",
     // Fill these in when the profiles are real. While both are null the
     // "Problem solving" section stays hidden and section numbers shift up.
